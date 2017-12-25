@@ -7,33 +7,24 @@ import (
 	"path/filepath"
 )
 
-const separator  = "───"
-const dir_separator = "├───"
-const last_element = "└───"
-const dir_shift = "│\t"
-const last_dir_shift = "\t"
+const (
+	separator  = "───"
+	dir_separator = "├───"
+	last_element = "└───"
+	dir_shift = "│\t"
+	last_dir_shift = "\t"
+)
 
 type Context struct {
 	isFirst, isLast bool
 	prefix string
 }
 
-
-
-func prettyPrint(context Context, out io.Writer, path string, info os.FileInfo, printFiles bool) {
+func prettyPrint(prefix string, out io.Writer, path string, info os.FileInfo, printFiles bool) {
 	// Printing
 	if !info.IsDir() && !printFiles {
 		return
 	}
-
-	fmt.Fprintf(out, context.prefix)
-
-	var prefix string
-	if !context.isLast{
-		prefix = dir_separator
-	} else {
-		prefix = last_element
-		}
 
 	fmt.Fprintf(out, prefix)
 
@@ -55,23 +46,13 @@ func prettyPrint(context Context, out io.Writer, path string, info os.FileInfo, 
 	}
 }
 
-func walkTree(context Context, out io.Writer, path string, printFiles bool) error {
+func walkTree(walkPrefix string, out io.Writer, path string, printFiles bool) error {
 	pattern := filepath.Join(path,"*")
 	paths,err := filepath.Glob(pattern)
 	if err != nil {
 		return err
 	}
 
-	prefix := context.prefix
-	if !context.isFirst {
-		if context.isLast {
-			context.prefix += last_dir_shift
-		} else {
-			context.prefix += dir_shift
-		}
-	}
-
-	//is_first := context.isFirst
 	var dirs []string
 
 	for _, d := range paths {
@@ -86,42 +67,41 @@ func walkTree(context Context, out io.Writer, path string, printFiles bool) erro
 		}
 	}
 
-	is_last := context.isLast
-	for i, d := range dirs {
-		context.isLast = false
+	var prefix string
+	var dirPrefix string
 
+	for i, d := range dirs {
 		stat, err := os.Stat(d)
 		if err != nil {
 			return err
 		}
 
+		isLast := i == len(dirs)-1
 
-		if i == len(dirs)-1 {
-			context.isLast = true
-		}
-		is_first := context.isFirst
+        if !isLast{
+            prefix = dir_separator
+            dirPrefix = dir_shift
+        } else {
+            prefix = last_element
+            dirPrefix = last_dir_shift
+        }
 
-		context.isFirst = false
-		prettyPrint(context, out, d, stat, printFiles)
+		prettyPrint(walkPrefix + prefix, out, d, stat, printFiles)
+		
 		if (stat.IsDir()) {
-			err = walkTree(context, out, d, printFiles)
+            err = walkTree(walkPrefix + dirPrefix, out, d, printFiles)
 		}
-		context.isFirst = is_first
 
 		if err != nil {
 			return err
 		}
 	}
-	context.isLast = is_last
-	context.prefix = prefix
 
 	return nil
 }
 
 func dirTree(out io.Writer, path string, printFiles bool) error {
-	var context Context
-	context.isFirst = true
-	currentDir,err := os.Open(path)
+    currentDir,err := os.Open(path)
 	if err != nil {
 		fmt.Println("Error ocurs in open", err)
 	}
@@ -135,7 +115,7 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 		return nil
 	}
 
-	walkTree(context, out, path, printFiles)
+	walkTree("", out, path, printFiles)
 
 	return nil
 }
