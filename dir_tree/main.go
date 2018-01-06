@@ -1,23 +1,23 @@
 package main
 
 import (
-	"os"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 )
 
 const (
-	separator  = "───"
-	dir_separator = "├───"
-	last_element = "└───"
-	dir_shift = "│\t"
+	separator      = "───"
+	dir_separator  = "├───"
+	last_element   = "└───"
+	dir_shift      = "│\t"
 	last_dir_shift = "\t"
 )
 
 type Context struct {
 	isFirst, isLast bool
-	prefix string
+	prefix          string
 }
 
 func prettyPrint(prefix string, out io.Writer, path string, info os.FileInfo, printFiles bool) {
@@ -47,8 +47,8 @@ func prettyPrint(prefix string, out io.Writer, path string, info os.FileInfo, pr
 }
 
 func walkTree(walkPrefix string, out io.Writer, path string, printFiles bool) error {
-	pattern := filepath.Join(path,"*")
-	paths,err := filepath.Glob(pattern)
+	pattern := filepath.Join(path, "*")
+	paths, err := filepath.Glob(pattern)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func walkTree(walkPrefix string, out io.Writer, path string, printFiles bool) er
 			continue
 		}
 
-		if printFiles || stat.IsDir(){
+		if printFiles || stat.IsDir() {
 			dirs = append(dirs, d)
 		}
 	}
@@ -78,18 +78,18 @@ func walkTree(walkPrefix string, out io.Writer, path string, printFiles bool) er
 
 		isLast := i == len(dirs)-1
 
-        if !isLast{
-            prefix = dir_separator
-            dirPrefix = dir_shift
-        } else {
-            prefix = last_element
-            dirPrefix = last_dir_shift
-        }
+		if !isLast {
+			prefix = dir_separator
+			dirPrefix = dir_shift
+		} else {
+			prefix = last_element
+			dirPrefix = last_dir_shift
+		}
 
-		prettyPrint(walkPrefix + prefix, out, d, stat, printFiles)
-		
-		if (stat.IsDir()) {
-            err = walkTree(walkPrefix + dirPrefix, out, d, printFiles)
+		prettyPrint(walkPrefix+prefix, out, d, stat, printFiles)
+
+		if stat.IsDir() {
+			err = walkTree(walkPrefix+dirPrefix, out, d, printFiles)
 		}
 
 		if err != nil {
@@ -101,7 +101,7 @@ func walkTree(walkPrefix string, out io.Writer, path string, printFiles bool) er
 }
 
 func dirTree(out io.Writer, path string, printFiles bool) error {
-    currentDir,err := os.Open(path)
+	currentDir, err := os.Open(path)
 	if err != nil {
 		fmt.Println("Error ocurs in open", err)
 	}
